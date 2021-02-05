@@ -1,0 +1,16 @@
+cd /exports/eddie/scratch/s2120291
+export PATH=$PATH:/exports/eddie/scratch/s2120291
+module load igmm/apps/R/3.6.1
+
+
+Rscript PRSice.R \
+--prsice PRSice_linux \
+--base daner_natgen_pgc_eur_filter_ambig.txt \
+--target ukb_imp_autosome_v3_rmSNP.QC \
+--beta \
+--base-maf MAF:0.01 \
+--binary-target T \
+--pheno pheno/no_pheno.txt \
+--bar-levels 0.01,0.05,0.1,.5,1 \
+--all-score \
+--out PRSice-SCZ
