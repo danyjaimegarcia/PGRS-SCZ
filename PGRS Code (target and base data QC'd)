@@ -57,7 +57,7 @@ module load igmm/apps/R/3.6.1
 #$ -e /exports/igmm/eddie/scratch/s2120291/PRSscz/joblogs/
 #$ -m beas
 #$ -M s2120291@ed.ac.uk
-#$ -l h_vmem=64G
+#$ -l h_vmem=32G
 
 Rscript /exports/eddie/scratch/s2120291/tools/PRSice.R \
 --prsice /exports/eddie/scratch/s2120291/tools/PRSice_linux \
@@ -71,14 +71,14 @@ Rscript /exports/eddie/scratch/s2120291/tools/PRSice.R \
 --fastscore \
 --bar-levels 0.01,0.05,0.1,.5,1 \
 --all-score \
---keep autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample
+--keep autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample \
 --out PRSice_output
 
+##tried adding this to troubleshoot 
+--out PRSice_output \
 --thread 22
 
 
-
-
-##Differences:
+##Differences?:
 . /etc/profile.d/modules.sh
 module add igmm/apps/R/3.6.1
