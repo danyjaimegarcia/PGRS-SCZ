@@ -43,6 +43,8 @@ cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosom
 exit
 
 ##make no_pheno file 
+module load igmm/apps/R/3.6.1
+R
 fam <- read.table("ukb_imp_autosome_v3_rmSNP.QC.fam")
 pheno <- data.frame("FID" = fam[,1], "IID" = fam[,2], "no_pheno" = 0)
 pheno$no_pheno <- sample(c(0,1), replace = T, size = nrow(pheno))
