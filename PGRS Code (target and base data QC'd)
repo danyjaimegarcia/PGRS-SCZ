@@ -1,6 +1,7 @@
 
 
-##set working directory (through eddie)
+##set working directory and enter an interactive node iwth 32GB (through eddie)
+qlogin -l h_vmem=32G
 cd /exports/eddie/scratch/s2120291/PRSscz
 
 ##Get Base data file (PCG website, downloads, 'EUR')
@@ -33,10 +34,13 @@ wc -l daner_natgen_pgc_eur_filter_ambig.txt   #7,877,580 SNP remain, so 1,270,83
         
 
 ##Get target data files (QC'd by Amelia)
+qlogin -q staging
+cd /exports/eddie/scratch/s2120291/PRSscz
 cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.bed /exports/eddie/scratch/s2120291/PRSscz
 cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.bim /exports/eddie/scratch/s2120291/PRSscz
 cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.fam /exports/eddie/scratch/s2120291/PRSscz
 cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample /exports/eddie/scratch/s2120291/PRSscz
+exit
 
 ##make no_pheno file 
 fam <- read.table("ukb_imp_autosome_v3_rmSNP.QC.fam")
@@ -46,6 +50,8 @@ write.table(pheno, "no_pheno.txt", row.names = F, quote = F)
 
 
 ##prepare environment for PRSice PRS score calculation 
+qlogin -l h_vmem=32G
+cd /exports/eddie/scratch/s2120291/PRSscz
 export PATH=$PATH:/exports/igmm/eddie/scratch/s2120291/tools
 module load igmm/apps/R/3.6.1
 
@@ -74,11 +80,7 @@ Rscript /exports/eddie/scratch/s2120291/tools/PRSice.R \
 --keep autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample \
 --out PRSice_output
 
-##tried adding this to troubleshoot 
---out PRSice_output \
---thread 22
+ls #check output files are in the correct place
+exit
 
-
-##Differences?:
-. /etc/profile.d/modules.sh
-module add igmm/apps/R/3.6.1
+# job completed in <10 mins
