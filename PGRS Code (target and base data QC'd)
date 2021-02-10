@@ -1,16 +1,84 @@
-cd /exports/eddie/scratch/s2120291
-export PATH=$PATH:/exports/eddie/scratch/s2120291
+
+
+##set working directory (through eddie)
+cd /exports/eddie/scratch/s2120291/PRSscz
+
+##Get Base data file (PCG website, downloads, 'EUR')
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1XyNkyXeNvGZKtAOZqCFl4txhUmXR4k6I' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1XyNkyXeNvGZKtAOZqCFl4txhUmXR4k6I" -O daner_natgen_pgc_eur.gz && rm -rf /tmp/cookies.txt
+md5sum daner_natgen_pgc_eur.gz ##should be a280ca286af274da1ff80f9bd6e46a0b
+gunzip daner_natgen_pgc_eur.gz
+
+##QC Base data
+#the following line prints any line with allele frequency above 0.01 ($7 because the seventh column of the file contains the allele frequency information in controls) AND
+#any line with allele frequency below 0.99 AND any line with INFO above 0.8 ($8 because the eigth column of the file contains the INFO information)
+
+awk 'NR==1 || ($7 > 0.01) && ($7 < 0.99) && ($8 > 0.8) {print > "daner_natgen_pgc_eur_filter_mafinfo.txt"}' daner_natgen_pgc_eur
+wc -l daner_natgen_pgc_eur_filter_mafinfo.txt      #original file contained 11,308,217 SNPs, this file contains 9,148,419 SNPs, so 2,159,798 SNPs removed at this stage, or 19%
+
+#the following line will sort the SNP IDs and put duplicated SNP IDs next to each other AND Print out any duplicated SNP IDs using the uniq command and print them to the duplicated.snp file
+
+awk ' {print $2}' daner_natgen_pgc_eur_filter_mafinfo.txt | sort | uniq -d > duplicated.snp
+wc -l duplicated.snp    #file length=0, no duplicated SNPs to remove
+
+#the following line will remove ambiguous SNPSs (necessary if SNP in base and target data generated using different genotyping chips where direction of strand may not be known
+#Variants with complementary alleles (A/T or G/C) will be hard to interpret)
+#Uses awk to search for and remove and combination of columns where allele 1 and allele 2 are complementary
+
+awk '!( ($4=="A" && $5=="T") || \
+        ($4=="T" && $5=="A") || \
+        ($4=="G" && $5=="C") || \
+        ($4=="C" && $5=="G")) {print > "daner_natgen_pgc_eur_filter_ambig.txt"}' \
+        daner_natgen_pgc_eur_filter_mafinfo.txt 
+wc -l daner_natgen_pgc_eur_filter_ambig.txt   #7,877,580 SNP remain, so 1,270,839 or 13% of SNP removed       
+        
+
+##Get target data files (QC'd by Amelia)
+cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.bed /exports/eddie/scratch/s2120291/PRSscz
+cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.bim /exports/eddie/scratch/s2120291/PRSscz
+cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.fam /exports/eddie/scratch/s2120291/PRSscz
+cp /exports/igmm/eddie/GenScotDepression/amelia/PRS_project/PRS/impv3/QC/autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample /exports/eddie/scratch/s2120291/PRSscz
+
+##make no_pheno file 
+fam <- read.table("ukb_imp_autosome_v3_rmSNP.QC.fam")
+pheno <- data.frame("FID" = fam[,1], "IID" = fam[,2], "no_pheno" = 0)
+pheno$no_pheno <- sample(c(0,1), replace = T, size = nrow(pheno))
+write.table(pheno, "no_pheno.txt", row.names = F, quote = F)
+
+
+##prepare environment for PRSice PRS score calculation 
+export PATH=$PATH:/exports/igmm/eddie/scratch/s2120291/tools
 module load igmm/apps/R/3.6.1
 
+##submit PRS score calculation through job in eddie
 
-Rscript PRSice.R \
---prsice PRSice_linux \
+ #!/bin/sh
+#$ -N PRSscz
+#$ -o /exports/igmm/eddie/scratch/s2120291/PRSscz/joblogs/
+#$ -e /exports/igmm/eddie/scratch/s2120291/PRSscz/joblogs/
+#$ -m beas
+#$ -M s2120291@ed.ac.uk
+#$ -l h_vmem=64G
+
+Rscript /exports/eddie/scratch/s2120291/tools/PRSice.R \
+--prsice /exports/eddie/scratch/s2120291/tools/PRSice_linux \
 --base daner_natgen_pgc_eur_filter_ambig.txt \
 --target ukb_imp_autosome_v3_rmSNP.QC \
---beta \
---base-maf MAF:0.01 \
+--or \
+--snp SNP --chr CHR --bp BP --A1 A1 --A2 A2 --stat OR --pvalue P \
 --binary-target T \
---pheno pheno/no_pheno.txt \
+--pheno no_pheno.txt \
+--pheno-col no_pheno \
+--fastscore \
 --bar-levels 0.01,0.05,0.1,.5,1 \
 --all-score \
---out PRSice-SCZ
+--keep autosome/ukb_imp_autosome_v3_rmSNP.QC.valid.sample
+--out PRSice_output
+
+--thread 22
+
+
+
+
+##Differences:
+. /etc/profile.d/modules.sh
+module add igmm/apps/R/3.6.1
